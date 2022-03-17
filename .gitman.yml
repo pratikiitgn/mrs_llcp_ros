@@ -1,0 +1,28 @@
+location: .gitman
+sources:
+  - repo: https://github.com/ctu-mrs/mrs_llcp
+    name: mrs_llcp
+    rev: master
+    type: git
+    sparse_paths:
+      -
+    links:
+      - source: ''
+        target: mrs_llcp
+    scripts:
+      - git submodule update --init --recursive
+sources_locked:
+  - repo: https://github.com/ctu-mrs/mrs_llcp
+    name: mrs_llcp
+    rev: 8371df88b1f36ccdc809d56ed2d9d5304c9d9939
+    type: git
+    sparse_paths:
+      -
+    links:
+      - source: ''
+        target: mrs_llcp
+    scripts:
+      - git submodule update --init --recursive
+default_group: ''
+groups:
+  -
