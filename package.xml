@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<package format="2">
+
+  <name>mrs_llcp</name>
+  <version>0.0.1</version>
+  <description>low level communication interface for serial line</description>
+
+  <maintainer email="hertdani@fel.cvut.cz">Daniel Hert</maintainer>
+  <maintainer email="Tomas.baca@fel.cvut.cz">Tomas Baca</maintainer>
+
+  <license>BSD 3-Clause</license>
+
+  <author email="hertdani@fel.cvut.cz">Daniel Hert</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>roscpp</depend>
+  <depend>cmake_modules</depend>
+  <depend>nodelet</depend>
+  <depend>mrs_msgs</depend>
+
+  <export>
+
+    <!-- The plugins.xml file defines nodelet as a plugin -->
+    <nodelet plugin="${prefix}/plugins.xml" />
+
+  </export>
+
+</package>
