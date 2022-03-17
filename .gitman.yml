@@ -14,7 +14,7 @@ sources:
 sources_locked:
   - repo: https://github.com/ctu-mrs/mrs_llcp
     name: mrs_llcp
-    rev: 454ecc8ec17d3f79cfe3d06b05da45a6369b4402
+    rev: 3b93440225848919994ffe2c2d16718ffd1b65d8
     type: git
     sparse_paths:
       -

@@ -22,12 +22,12 @@ catkin_package(
 
 include_directories(
   include
-  mrs_llcp/include
+  mrs_llcp
   ${catkin_INCLUDE_DIRS}
   )
 
 add_library(llcp
-  mrs_llcp/src/llcp.cpp
+  mrs_llcp/llcp.cpp
 )
 
 add_library(MrsLlcpRos src/llcp_ros.cpp src/serial_port.cpp)
