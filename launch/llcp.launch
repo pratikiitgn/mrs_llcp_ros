@@ -20,9 +20,9 @@
   <group ns="$(arg UAV_NAME)">
 
     <!-- launch the nodelet -->
-    <node pkg="nodelet" type="nodelet" name="llcp" args="$(arg nodelet) llcp_ros/LlcpRos $(arg nodelet_manager)" launch-prefix="$(arg launch_prefix_debug)" output="screen">
+    <node pkg="nodelet" type="nodelet" name="llcp" args="$(arg nodelet) mrs_llcp_ros/MrsLlcpRos $(arg nodelet_manager)" launch-prefix="$(arg launch_prefix_debug)" output="screen">
 
-      <rosparam file="$(find mrs_llcp)/config/llcp.yaml" />
+      <rosparam file="$(find mrs_llcp_ros)/config/llcp.yaml" />
 
       <param name="uav_name" type="string" value="$(arg UAV_NAME)"/>
       <param name="enable_profiler" type="bool" value="$(arg profiler)" />

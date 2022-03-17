@@ -13,12 +13,12 @@
 
 #define SERIAL_BUFFER_SIZE 512
 
-namespace llcp_ros
+namespace mrs_llcp_ros
 {
 
-/* class LlcpRos //{ */
+/* class MrsLlcpRos //{ */
 
-class LlcpRos : public nodelet::Nodelet {
+class MrsLlcpRos : public nodelet::Nodelet {
 
 public:
   virtual void onInit();
@@ -34,7 +34,7 @@ private:
   std::thread serial_thread_;
 
   void callbackSendMessage(const mrs_msgs::LlcpConstPtr &msg);
-
+  void connectToSerial();
   void callbackMaintainerTimer(const ros::TimerEvent &event);
   void callbackConnectTimer(const ros::TimerEvent &event);
 
@@ -42,96 +42,92 @@ private:
 
   bool running_     = true;
   bool initialized_ = false;
-  bool connected_ = false;
+  bool connected_   = false;
 
   std::string portname_;
+  int         baudrate_;
 
   ros::Publisher  llcp_publisher_;
   ros::Subscriber llcp_subscriber_;
 
   ros::Timer maintainer_timer_;
+
+  std::mutex mutex_connected_;
 };
 
 //}
 
 /* onInit() //{ */
 
-void LlcpRos::onInit() {
+void MrsLlcpRos::onInit() {
 
   // Get paramters
   nh_ = ros::NodeHandle("~");
 
   ros::Time::waitForValid();
 
-  ROS_INFO("[LlcpRos]: node initialized");
-
+  ROS_INFO("[MrsLlcpRos]: node initialized");
 
   llcp_initialize(&llcp_receiver);
 
-  ROS_INFO("[LlcpRos]: llcp receiver initialized");
+  ROS_INFO("[MrsLlcpRos]: llcp receiver initialized");
 
-  serial_thread_ = std::thread(&LlcpRos::serialThread, this);
-  /* nh_.param("uav_name", uav_name_, std::string("uav")); */
-  nh_.param("portname", portname_);
-  /* nh_.param("baudrate", baudrate_, 115200); */
-  /* nh_.param("publish_bad_checksum", publish_bad_checksum, false); */
-  /* nh_.param("simulate_fake_garmin", simulate_fake_garmin, false); */
-  /* nh_.param("use_timeout", use_timeout, true); */
-  /* nh_.param("swap_garmins", swap_garmins, false); */
-  /* nh_.param("serial_rate", serial_rate_, 5000); */
-  /* nh_.param("serial_buffer_size", serial_buffer_size_, 1024); */
+  nh_.getParam("portname", portname_);
+  nh_.getParam("baudrate", baudrate_);
 
-  /* ser_send_int     = nh_.advertiseService("send_int", &LlcpRos::callbackSendInt, this); */
-  /* ser_send_int_raw = nh_.advertiseService("send_int_raw", &LlcpRos::callbackSendIntRaw, this); */
-
-  /* // Publishers */
-  /* std::string postfix_A = swap_garmins ? "_up" : ""; */
-  /* std::string postfix_B = swap_garmins ? "" : "_up"; */
-  /* range_publisher_A_    = nh_.advertise<sensor_msgs::Range>("range" + postfix_A, 1); */
-  /* garmin_A_frame_       = uav_name_ + "/garmin" + postfix_A; */
-  /* garmin_B_frame_       = uav_name_ + "/garmin" + postfix_B; */
-
-  /* llcp_ros_publisher_ = nh_.advertise<mrs_msgs::LlcpRos>("baca_protocol_out", 1); */
-
-  /* llcp_ros_subscriber = nh_.subscribe("baca_protocol_in", 10, &LlcpRos::callbackSendMessage, this, ros::TransportHints().tcpNoDelay()); */
   llcp_publisher_ = nh_.advertise<mrs_msgs::Llcp>("llcp_out", 1);
 
-  llcp_subscriber_ = nh_.subscribe("llcp_in", 10, &LlcpRos::callbackSendMessage, this, ros::TransportHints().tcpNoDelay());
+  llcp_subscriber_ = nh_.subscribe("llcp_in", 10, &MrsLlcpRos::callbackSendMessage, this, ros::TransportHints().tcpNoDelay());
 
-  /* // Output loaded parameters to console for double checking */
-  /* ROS_INFO_THROTTLE(1.0, "[%s] is up and running with the following parameters:", ros::this_node::getName().c_str()); */
-  /* ROS_INFO_THROTTLE(1.0, "[%s] portname: %s", ros::this_node::getName().c_str(), portname_.c_str()); */
-  /* ROS_INFO_THROTTLE(1.0, "[%s] baudrate: %i", ros::this_node::getName().c_str(), baudrate_); */
-  /* ROS_INFO_STREAM_THROTTLE(1.0, "[" << ros::this_node::getName().c_str() << "] publishing messages with wrong checksum: " << publish_bad_checksum); */
+  maintainer_timer_ = nh_.createTimer(ros::Rate(1), &MrsLlcpRos::callbackMaintainerTimer, this);
 
+  {
+    std::scoped_lock lock(mutex_connected_);
+    connected_ = false;
+  }
 
-  /* serial_timer_     = nh_.createTimer(ros::Rate(serial_rate_), &LlcpRos::callbackSerialTimer, this); */
-  /* fake_timer_       = nh_.createTimer(ros::Rate(fake_garmin_rate_), &LlcpRos::callbackFakeTimer, this); */
-  
-  maintainer_timer_ = nh_.createTimer(ros::Rate(1), &LlcpRos::callbackMaintainerTimer, this);
-
-  connected_ = openSerialPort(portname_, 115200);
-
-
+  connectToSerial();
   initialized_ = true;
 }
 //}
 
+/*  connectToSerial()//{ */
+
+void MrsLlcpRos::connectToSerial() {
+
+  if (serial_thread_.joinable()) {
+    serial_thread_.join();
+  }
+
+  bool tmp_conected = false;
+
+  while (!tmp_conected) {
+    tmp_conected = openSerialPort(portname_, baudrate_);
+  }
+
+  {
+    std::scoped_lock lock(mutex_connected_);
+    connected_ = true;
+  }
+
+  serial_thread_ = std::thread(&MrsLlcpRos::serialThread, this);
+}
+
+//}
+
 /*  openSerialPort()//{ */
 
-bool LlcpRos::openSerialPort(std::string portname, int baudrate) {
+bool MrsLlcpRos::openSerialPort(std::string portname, int baudrate) {
 
   ROS_INFO_THROTTLE(1.0, "[%s]: Openning serial port.", ros::this_node::getName().c_str());
+  ROS_INFO_STREAM_THROTTLE(1.0, "Portname: " << portname << " baudrate: " << baudrate);
 
   if (!serial_port_.connect(portname, baudrate)) {
     ROS_ERROR_THROTTLE(1.0, "[%s]: Could not connect to the serial port", ros::this_node::getName().c_str());
-    /* is_connected_ = false; */
     return false;
   }
 
   ROS_INFO_THROTTLE(1.0, "[%s]: Connected to sensor.", ros::this_node::getName().c_str());
-  /* is_connected_  = true; */
-  /* last_received_ = ros::Time::now(); */
 
   return true;
 }
@@ -140,37 +136,30 @@ bool LlcpRos::openSerialPort(std::string portname, int baudrate) {
 
 /*  serialThread()//{ */
 
-void LlcpRos::serialThread(void) {
+void MrsLlcpRos::serialThread(void) {
 
   uint8_t  rx_buffer[SERIAL_BUFFER_SIZE];
   uint16_t bytes_read;
 
-  while (!initialized_) {
-    //TODO : do mutex initialized_ and connected_ variables!!!
-    ROS_INFO("[LlcpRos]: waiting for initialization");
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  }
-
-  while (!connected_) {
-    //TODO : do mutex initialized_ and connected_ variables!!!
-    ROS_INFO("[LlcpRos]: waiting for connection");
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  }
-
-  /* { */
-  /*   while (!serial_port_.checkConnected()) { */
-  /*     ROS_INFO("[LlcpRos]: serial thread waiting for serial port"); */
-  /*     std::this_thread::sleep_for(std::chrono::milliseconds(100)); */
-  /*   } */
-  /* } */
-
-  ROS_INFO("[LlcpRos]: serial thread starting");
+  ROS_INFO("[MrsLlcpRos]: serial thread starting");
 
   while (running_) {
-    bytes_read = serial_port_.readSerial(rx_buffer, SERIAL_BUFFER_SIZE);
-    if (bytes_read > 0) {
 
-      // feed all the incoming bytes into the MiniPIX interface
+    bool connected;
+    {
+      std::scoped_lock lock(mutex_connected_);
+      connected = connected_;
+    }
+    if (!connected) {
+      ROS_WARN("[MrsLlcpRos]: terminating serial thread because the serial port was disconnected");
+      return;
+    }
+
+    bytes_read = serial_port_.readSerial(rx_buffer, SERIAL_BUFFER_SIZE);
+    if (bytes_read > 0 && bytes_read < SERIAL_BUFFER_SIZE) {
+      /* If the serial device is disconnected and readSerial() is called, it will return max_int number of read bytes, thats why we check it against the
+       * SERIAL_BUFFER_SIZE */
+
       for (uint16_t i = 0; i < bytes_read; i++) {
 
         LLCP_Message_t *message_in;
@@ -178,16 +167,14 @@ void LlcpRos::serialThread(void) {
         bool checksum_matched = false;
 
         if (llcp_processChar(rx_buffer[i], &llcp_receiver, &message_in, &checksum_matched)) {
-          ROS_INFO_STREAM("[LlcpRos]: received message with id " << message_in->id);
-          ROS_INFO_STREAM("[LlcpRos]: checksum is: " << checksum_matched);
+          ROS_INFO_STREAM("[MrsLlcpRos]: received message with id " << message_in->id);
+          ROS_INFO_STREAM("[MrsLlcpRos]: checksum is: " << checksum_matched);
           mrs_msgs::Llcp msg_out;
 
           msg_out.checksum_matched = checksum_matched;
           msg_out.id               = message_in->id;
 
           uint8_t payload_size = llcp_receiver.payload_size;
-
-          /* msg_out.payload.push_back(message_in->id); */
 
           for (uint8_t i = 0; i < payload_size; i++) {
             msg_out.payload.push_back(message_in->payload[i]);
@@ -205,14 +192,20 @@ void LlcpRos::serialThread(void) {
 
 /* callbackSendMessage() //{ */
 
-void LlcpRos::callbackSendMessage(const mrs_msgs::LlcpConstPtr &msg) {
+void MrsLlcpRos::callbackSendMessage(const mrs_msgs::LlcpConstPtr &msg) {
 
-  if (!connected_) {
+  bool connected;
+
+  {
+    std::scoped_lock lock(mutex_connected_);
+    connected = connected_;
+  }
+  if (!connected) {
     return;
   }
 
   if (!initialized_) {
-    ROS_INFO_STREAM_THROTTLE(1.0, "[LlcpRos]: Cannot send message, nodelet not initialized!");
+    ROS_INFO_STREAM_THROTTLE(1.0, "[MrsLlcpRos]: Cannot send message, nodelet not initialized!");
     return;
   }
 
@@ -234,13 +227,24 @@ void LlcpRos::callbackSendMessage(const mrs_msgs::LlcpConstPtr &msg) {
 
 /* callbackMaintainerTimer() //{ */
 
-void LlcpRos::callbackMaintainerTimer(const ros::TimerEvent &event) {
+void MrsLlcpRos::callbackMaintainerTimer(const ros::TimerEvent &event) {
 
-  if (connected_) {
+  bool connected;
+
+  {
+    std::scoped_lock lock(mutex_connected_);
+    connected = connected_;
+  }
+
+  if (connected) {
 
     if (!serial_port_.checkConnected()) {
-      connected_ = false;
-      ROS_ERROR("[LlcpRos] Serial device is disconnected! ");
+      {
+        std::scoped_lock lock(mutex_connected_);
+        connected_ = false;
+      }
+      ROS_ERROR("[MrsLlcpRos] Serial device is disconnected! ");
+      connectToSerial();
     }
   }
 
@@ -254,9 +258,10 @@ void LlcpRos::callbackMaintainerTimer(const ros::TimerEvent &event) {
 
   /* if (connected_) { */
 
-    /* ROS_INFO_STREAM("Got msgs - Garmin: " << received_msg_ok_garmin << " Generic msg: " << received_msg_ok << "  Wrong checksum: " << received_msg_bad_checksum */
-    /*                                       << "; in the last " << (ros::Time::now() - interval_).toSec() << " s"); */
-    /* interval_ = ros::Time::now(); */
+  /* ROS_INFO_STREAM("Got msgs - Garmin: " << received_msg_ok_garmin << " Generic msg: " << received_msg_ok << "  Wrong checksum: " << received_msg_bad_checksum
+   */
+  /*                                       << "; in the last " << (ros::Time::now() - interval_).toSec() << " s"); */
+  /* interval_ = ros::Time::now(); */
 
   /* } else { */
 
@@ -266,6 +271,6 @@ void LlcpRos::callbackMaintainerTimer(const ros::TimerEvent &event) {
 
 //}
 
-}  // namespace llcp_ros
+}  // namespace mrs_llcp_ros
 
-PLUGINLIB_EXPORT_CLASS(llcp_ros::LlcpRos, nodelet::Nodelet);
+PLUGINLIB_EXPORT_CLASS(mrs_llcp_ros::MrsLlcpRos, nodelet::Nodelet);

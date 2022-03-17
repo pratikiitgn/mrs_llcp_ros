@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
 
-  <name>mrs_llcp</name>
+  <name>mrs_llcp_ros</name>
   <version>0.0.1</version>
   <description>low level communication interface for serial line</description>
 

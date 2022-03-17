@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1.2)
-project(mrs_llcp)
+project(mrs_llcp_ros)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -27,11 +27,11 @@ include_directories(
   )
 
 add_library(llcp
-  mrs_llcp/src/llcp.c
+  mrs_llcp/src/llcp.cpp
 )
 
-add_library(LlcpRos src/llcp_ros.cpp src/serial_port.cpp)
-target_link_libraries(LlcpRos
+add_library(MrsLlcpRos src/llcp_ros.cpp src/serial_port.cpp)
+target_link_libraries(MrsLlcpRos
   llcp
   ${catkin_LIBRARIES}
   )
