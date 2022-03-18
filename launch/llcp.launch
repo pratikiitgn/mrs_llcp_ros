@@ -8,6 +8,9 @@
   <arg unless="$(arg DEBUG)" name="launch_prefix_debug" value=""/>
   <arg     if="$(arg DEBUG)" name="launch_prefix_debug" value="debug_roslaunch"/>
 
+  <arg name="portname" default="/dev/arduino"/>
+  <arg name="baudrate" default="115200"/>
+
   <!-- will it run as standalone nodelet or using a nodelet manager? -->
   <arg name="standalone" default="true" />
   <arg name="manager" default="$(arg UAV_NAME)_llcp_manager" />
@@ -26,6 +29,9 @@
 
       <param name="uav_name" type="string" value="$(arg UAV_NAME)"/>
       <param name="enable_profiler" type="bool" value="$(arg profiler)" />
+
+      <param name="portname" type="string" value="$(arg portname)"/>
+      <param name="baudrate" type="int" value="$(arg baudrate)"/>
 
       <remap from="~llcp_out" to="~received_message" />
       <remap from="~llcp_in" to="~send_message" />
