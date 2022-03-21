@@ -24,6 +24,15 @@ public:
   virtual void onInit();
 
 private:
+  struct msg_counter
+  {
+    uint8_t  id;
+    uint16_t num;
+  };
+
+  std::vector<msg_counter> received_msgs;
+  std::vector<msg_counter> sent_msgs;
+
   LLCP_Receiver_t llcp_receiver;
 
   serial_port::SerialPort serial_port_;
@@ -167,8 +176,7 @@ void MrsLlcpRos::serialThread(void) {
         bool checksum_matched = false;
 
         if (llcp_processChar(rx_buffer[i], &llcp_receiver, &message_in, &checksum_matched)) {
-          ROS_INFO_STREAM("[MrsLlcpRos]: received message with id " << message_in->id);
-          ROS_INFO_STREAM("[MrsLlcpRos]: checksum is: " << checksum_matched);
+          /* ROS_INFO_STREAM("[MrsLlcpRos]: received message with id " << message_in->id << "; checksum is: " << checksum_matched); */
           mrs_msgs::Llcp msg_out;
 
           msg_out.checksum_matched = checksum_matched;
@@ -180,6 +188,16 @@ void MrsLlcpRos::serialThread(void) {
             msg_out.payload.push_back(message_in->payload[i]);
           }
           llcp_publisher_.publish(msg_out);
+
+          std::vector<msg_counter>::iterator it = std::find_if(received_msgs.begin(), received_msgs.end(), boost::bind(&msg_counter::id, _1) == message_in->id);
+          if (it != received_msgs.end()) {
+            it->num++;
+          } else {
+            msg_counter tmp;
+            tmp.id  = message_in->id;
+            tmp.num = 1;
+            received_msgs.push_back(tmp);
+          }
         }
       }
     } else {
@@ -221,6 +239,16 @@ void MrsLlcpRos::callbackSendMessage(const mrs_msgs::LlcpConstPtr &msg) {
 
   uint16_t msg_len = llcp_prepareMessage((uint8_t *)&payload_arr, payload_size, out_buffer, msg->id);
   serial_port_.sendCharArray(out_buffer, msg_len);
+
+  std::vector<msg_counter>::iterator it = std::find_if(sent_msgs.begin(), sent_msgs.end(), boost::bind(&msg_counter::id, _1) == msg->id);
+  if (it != sent_msgs.end()) {
+    it->num++;
+  } else {
+    msg_counter tmp;
+    tmp.id  = msg->id;
+    tmp.num = 1;
+    sent_msgs.push_back(tmp);
+  }
 }
 
 //}
@@ -247,6 +275,18 @@ void MrsLlcpRos::callbackMaintainerTimer(const ros::TimerEvent &event) {
       connectToSerial();
     }
   }
+
+
+  ROS_INFO_STREAM("------------------------------------------------------------");
+  ROS_INFO_STREAM("[MrsLlcpRos]: sent messages: ");
+  for (size_t i = 0; i < sent_msgs.size(); i++) {
+    ROS_INFO_STREAM("[MrsLlcpRos]: ID: " << sent_msgs[i].id << " times: " << sent_msgs[i].num);
+  }
+  ROS_INFO_STREAM("[MrsLlcpRos]: received messages: ");
+  for (size_t i = 0; i < received_msgs.size(); i++) {
+    ROS_INFO_STREAM("[MrsLlcpRos]: ID: " << received_msgs[i].id << " times: " << received_msgs[i].num);
+  }
+  ROS_INFO_STREAM("------------------------------------------------------------");
 
   /* if (((ros::Time::now() - last_received_).toSec() > MAXIMAL_TIME_INTERVAL) && use_timeout && is_connected_) { */
 
