@@ -62,6 +62,8 @@ private:
   ros::Timer maintainer_timer_;
 
   std::mutex mutex_connected_;
+
+  ros::Time maintainer_last_time_;
 };
 
 //}
@@ -88,8 +90,8 @@ void MrsLlcpRos::onInit() {
 
   llcp_subscriber_ = nh_.subscribe("llcp_in", 10, &MrsLlcpRos::callbackSendMessage, this, ros::TransportHints().tcpNoDelay());
 
-  maintainer_timer_ = nh_.createTimer(ros::Rate(1), &MrsLlcpRos::callbackMaintainerTimer, this);
-
+  maintainer_timer_     = nh_.createTimer(ros::Rate(0.2), &MrsLlcpRos::callbackMaintainerTimer, this);
+  maintainer_last_time_ = ros::Time::now();
   {
     std::scoped_lock lock(mutex_connected_);
     connected_ = false;
@@ -227,7 +229,6 @@ void MrsLlcpRos::callbackSendMessage(const mrs_msgs::LlcpConstPtr &msg) {
     return;
   }
 
-  /* ROS_INFO_STREAM_THROTTLE(1.0, "SENDING: " << msg->id); */
 
   uint8_t out_buffer[512];
 
@@ -275,38 +276,31 @@ void MrsLlcpRos::callbackMaintainerTimer(const ros::TimerEvent &event) {
       connectToSerial();
     }
   }
+  std::vector<std::string> testvector;
+  size_t                   tmp_len = std::max(sent_msgs.size(), received_msgs.size());
+  for (int i = 0; i < tmp_len; i++) {
+    testvector.push_back("                   |                      ");
+  }
 
-
-  ROS_INFO_STREAM("------------------------------------------------------------");
-  ROS_INFO_STREAM("[MrsLlcpRos]: sent messages: ");
+  ROS_INFO_STREAM("------------------------------------------------");
+  ROS_INFO_STREAM("------- llcp stats for last " << (ros::Time::now() - maintainer_last_time_).toSec() << " secs -------");
+  ROS_INFO_STREAM("sent messages:     |     received messages:");
   for (size_t i = 0; i < sent_msgs.size(); i++) {
-    ROS_INFO_STREAM("[MrsLlcpRos]: ID: " << sent_msgs[i].id << " times: " << sent_msgs[i].num);
+    std::string tmp_string = "ID " + std::to_string(sent_msgs[i].id) + ", " + std::to_string(sent_msgs[i].num) + " msgs";
+    testvector[i].replace(0, tmp_string.length(), tmp_string);
   }
-  ROS_INFO_STREAM("[MrsLlcpRos]: received messages: ");
   for (size_t i = 0; i < received_msgs.size(); i++) {
-    ROS_INFO_STREAM("[MrsLlcpRos]: ID: " << received_msgs[i].id << " times: " << received_msgs[i].num);
+    std::string tmp_string = "ID " + std::to_string(received_msgs[i].id) + ", " + std::to_string(received_msgs[i].num) + " msgs";
+    testvector[i].replace(25, tmp_string.length(), tmp_string);
   }
-  ROS_INFO_STREAM("------------------------------------------------------------");
+  sent_msgs.clear();
+  received_msgs.clear();
+  for (int i = 0; i < tmp_len; i++) {
+    ROS_INFO_STREAM(testvector[i]);
+  }
+  ROS_INFO_STREAM("------------------------------------------------");
 
-  /* if (((ros::Time::now() - last_received_).toSec() > MAXIMAL_TIME_INTERVAL) && use_timeout && is_connected_) { */
-
-  /*   connected_ = false; */
-
-  /*   ROS_ERROR_STREAM("[" << ros::this_node::getName().c_str() << "] Serial port timed out - no messages were received in " << MAXIMAL_TIME_INTERVAL */
-  /*                        << " seconds"); */
-  /* } */
-
-  /* if (connected_) { */
-
-  /* ROS_INFO_STREAM("Got msgs - Garmin: " << received_msg_ok_garmin << " Generic msg: " << received_msg_ok << "  Wrong checksum: " << received_msg_bad_checksum
-   */
-  /*                                       << "; in the last " << (ros::Time::now() - interval_).toSec() << " s"); */
-  /* interval_ = ros::Time::now(); */
-
-  /* } else { */
-
-  /*   connectToSensor(); */
-  /* } */
+  maintainer_last_time_ = ros::Time::now();
 }
 
 //}
