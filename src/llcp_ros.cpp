@@ -8,7 +8,10 @@
 
 #include <mrs_msgs/Llcp.h>
 
+extern "C" {
 #include <llcp.h>
+}
+
 #include <thread>
 
 #define SERIAL_BUFFER_SIZE 512
@@ -182,7 +185,6 @@ void MrsLlcpRos::serialThread(void) {
           mrs_msgs::Llcp msg_out;
 
           msg_out.checksum_matched = checksum_matched;
-          msg_out.id               = message_in->id;
 
           uint8_t payload_size = llcp_receiver.payload_size;
 
@@ -191,12 +193,12 @@ void MrsLlcpRos::serialThread(void) {
           }
           llcp_publisher_.publish(msg_out);
 
-          std::vector<msg_counter>::iterator it = std::find_if(received_msgs.begin(), received_msgs.end(), boost::bind(&msg_counter::id, _1) == message_in->id);
+          std::vector<msg_counter>::iterator it = std::find_if(received_msgs.begin(), received_msgs.end(), boost::bind(&msg_counter::id, _1) == message_in->payload[0]);
           if (it != received_msgs.end()) {
             it->num++;
           } else {
             msg_counter tmp;
-            tmp.id  = message_in->id;
+            tmp.id  = message_in->payload[0];
             tmp.num = 1;
             received_msgs.push_back(tmp);
           }
@@ -238,15 +240,15 @@ void MrsLlcpRos::callbackSendMessage(const mrs_msgs::LlcpConstPtr &msg) {
   uint8_t              payload_arr[payload_size];
   std::copy(payload_vec.begin(), payload_vec.end(), payload_arr);
 
-  uint16_t msg_len = llcp_prepareMessage((uint8_t *)&payload_arr, payload_size, out_buffer, msg->id);
+  uint16_t msg_len = llcp_prepareMessage((uint8_t *)&payload_arr, payload_size, out_buffer);
   serial_port_.sendCharArray(out_buffer, msg_len);
 
-  std::vector<msg_counter>::iterator it = std::find_if(sent_msgs.begin(), sent_msgs.end(), boost::bind(&msg_counter::id, _1) == msg->id);
+  std::vector<msg_counter>::iterator it = std::find_if(sent_msgs.begin(), sent_msgs.end(), boost::bind(&msg_counter::id, _1) == payload_arr[0]);
   if (it != sent_msgs.end()) {
     it->num++;
   } else {
     msg_counter tmp;
-    tmp.id  = msg->id;
+    tmp.id  = payload_arr[0];
     tmp.num = 1;
     sent_msgs.push_back(tmp);
   }

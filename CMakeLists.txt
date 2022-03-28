@@ -27,7 +27,7 @@ include_directories(
   )
 
 add_library(llcp
-  mrs_llcp/llcp.cpp
+  mrs_llcp/llcp.c
 )
 
 add_library(MrsLlcpRos src/llcp_ros.cpp src/serial_port.cpp)
