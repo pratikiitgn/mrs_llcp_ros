@@ -4,8 +4,6 @@ The management of the serial port on Linux can be a hassle, so this packages tak
 
 ```mermaid
 flowchart LR
-A[Hard] <-->|Text| B(Round)
-B --> C{Decision}
-C -->|One| D[Result 1]
-C -->|Two| E[Result 2]
+A[Your ROS node] <-->|ROS messages| B[mrs_llcp_ros]
+B <-->|UART| C[Low level device]
 ```
