@@ -78,6 +78,7 @@ void LlcpExample::callbackReceiveMessage(const mrs_msgs::LlcpConstPtr &msg) {
 ```c
   data_msg msg_out;
 
+  msg_out.id  = DATA_MSG_ID;
   msg_out.data1_uint8  = 23;
   msg_out.data2_uint32 = 178491;
   msg_out.data3_float  = 420.69;
