@@ -1,4 +1,4 @@
-## message definitions
+## Installation
 Clone this repository and call:
 ```
 gitman install
