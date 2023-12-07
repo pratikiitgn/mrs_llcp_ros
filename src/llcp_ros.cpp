@@ -6,7 +6,7 @@
 #include <nodelet/nodelet.h>
 #include <pluginlib/class_list_macros.h>
 
-#include <mrs_msgs/Llcp.h>
+#include <mrs_modules_msgs/Llcp.h>
 
 extern "C" {
 #include <llcp.h>
@@ -45,7 +45,7 @@ private:
 
   std::thread serial_thread_;
 
-  void callbackSendMessage(const mrs_msgs::LlcpConstPtr &msg);
+  void callbackSendMessage(const mrs_modules_msgs::LlcpConstPtr &msg);
   void connectToSerial();
   void callbackMaintainerTimer(const ros::TimerEvent &event);
   void callbackConnectTimer(const ros::TimerEvent &event);
@@ -89,7 +89,7 @@ void MrsLlcpRos::onInit() {
   nh_.getParam("portname", portname_);
   nh_.getParam("baudrate", baudrate_);
 
-  llcp_publisher_ = nh_.advertise<mrs_msgs::Llcp>("llcp_out", 1);
+  llcp_publisher_ = nh_.advertise<mrs_modules_msgs::Llcp>("llcp_out", 1);
 
   llcp_subscriber_ = nh_.subscribe("llcp_in", 10, &MrsLlcpRos::callbackSendMessage, this, ros::TransportHints().tcpNoDelay());
 
@@ -182,7 +182,7 @@ void MrsLlcpRos::serialThread(void) {
 
         if (llcp_processChar(rx_buffer[i], &llcp_receiver, &message_in, &checksum_matched)) {
           /* ROS_INFO_STREAM("[MrsLlcpRos]: received message with id " << message_in->id << "; checksum is: " << checksum_matched); */
-          mrs_msgs::Llcp msg_out;
+          mrs_modules_msgs::Llcp msg_out;
 
           msg_out.checksum_matched = checksum_matched;
 
@@ -214,7 +214,7 @@ void MrsLlcpRos::serialThread(void) {
 
 /* callbackSendMessage() //{ */
 
-void MrsLlcpRos::callbackSendMessage(const mrs_msgs::LlcpConstPtr &msg) {
+void MrsLlcpRos::callbackSendMessage(const mrs_modules_msgs::LlcpConstPtr &msg) {
 
   bool connected;
 
