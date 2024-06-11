@@ -58,6 +58,8 @@ private:
 
   std::string portname_;
   int         baudrate_;
+  bool        debug_serial_;
+
 
   ros::Publisher  llcp_publisher_;
   ros::Subscriber llcp_subscriber_;
@@ -88,6 +90,7 @@ void MrsLlcpRos::onInit() {
 
   nh_.getParam("portname", portname_);
   nh_.getParam("baudrate", baudrate_);
+  nh_.param<bool>("debug_serial", debug_serial_, false);
 
   llcp_publisher_ = nh_.advertise<mrs_modules_msgs::Llcp>("llcp_out", 1);
 
@@ -98,6 +101,10 @@ void MrsLlcpRos::onInit() {
   {
     std::scoped_lock lock(mutex_connected_);
     connected_ = false;
+  }
+
+  if (debug_serial_) {
+    ROS_INFO("[MrsLlcpRos]: Serial Debug is enabled");
   }
 
   connectToSerial();
@@ -179,7 +186,9 @@ void MrsLlcpRos::serialThread(void) {
         LLCP_Message_t *message_in;
 
         bool checksum_matched = false;
-
+        if (debug_serial_) {
+          std::cout << rx_buffer[i];
+        }
         if (llcp_processChar(rx_buffer[i], &llcp_receiver, &message_in, &checksum_matched)) {
           /* ROS_INFO_STREAM("[MrsLlcpRos]: received message with id " << message_in->id << "; checksum is: " << checksum_matched); */
           mrs_modules_msgs::Llcp msg_out;
@@ -193,7 +202,8 @@ void MrsLlcpRos::serialThread(void) {
           }
           llcp_publisher_.publish(msg_out);
 
-          std::vector<msg_counter>::iterator it = std::find_if(received_msgs.begin(), received_msgs.end(), boost::bind(&msg_counter::id, _1) == message_in->payload[0]);
+          std::vector<msg_counter>::iterator it =
+              std::find_if(received_msgs.begin(), received_msgs.end(), boost::bind(&msg_counter::id, _1) == message_in->payload[0]);
           if (it != received_msgs.end()) {
             it->num++;
           } else {
