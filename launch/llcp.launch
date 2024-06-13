@@ -2,6 +2,7 @@
 
   <arg name="UAV_NAME" default="$(optenv UAV_NAME uav)" />
   <arg name="profiler" default="$(optenv PROFILER false)" />
+  <arg name="nodename" default="llcp" />
 
   <!-- will it run using GNU debugger? -->
   <arg name="DEBUG" default="false" />
@@ -23,12 +24,13 @@
   <group ns="$(arg UAV_NAME)">
 
     <!-- launch the nodelet -->
-    <node pkg="nodelet" type="nodelet" name="llcp" args="$(arg nodelet) mrs_llcp_ros/MrsLlcpRos $(arg nodelet_manager)" launch-prefix="$(arg launch_prefix_debug)" output="screen">
+    <node pkg="nodelet" type="nodelet" name="$(arg nodename)" args="$(arg nodelet) mrs_llcp_ros/MrsLlcpRos $(arg nodelet_manager)" launch-prefix="$(arg launch_prefix_debug)" output="screen">
 
       <rosparam file="$(find mrs_llcp_ros)/config/llcp.yaml" />
 
       <param name="uav_name" type="string" value="$(arg UAV_NAME)"/>
       <param name="enable_profiler" type="bool" value="$(arg profiler)" />
+      <param name="debug_serial" type="bool" value="false" />
 
       <param name="portname" type="string" value="$(arg portname)"/>
       <param name="baudrate" type="int" value="$(arg baudrate)"/>

@@ -105,6 +105,34 @@ bool SerialPort::connect(const std::string port, int baudrate) {
       baudrate_set = B921600;
       break;
     }
+    case 1000000: {
+      baudrate_set = B1000000;
+      break;
+    }
+    case 1500000: {
+      baudrate_set = B1500000;
+      break;
+    }
+    case 2000000: {
+      baudrate_set = B2000000;
+      break;
+    }
+    case 2500000: {
+      baudrate_set = B2500000;
+      break;
+    }
+    case 3000000: {
+      baudrate_set = B3000000;
+      break;
+    }
+    case 3500000: {
+      baudrate_set = B3500000;
+      break;
+    }
+    case 4000000: {
+      baudrate_set = B4000000;
+      break;
+    }
     default:
       baudrate_set = 0;
       ROS_ERROR_STREAM("[SerialPort] Unsupported baudrate: " << baudrate);

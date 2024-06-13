@@ -14,7 +14,7 @@ extern "C" {
 
 #include <thread>
 
-#define SERIAL_BUFFER_SIZE 512
+#define SERIAL_BUFFER_SIZE 1024
 
 namespace mrs_llcp_ros
 {
@@ -242,7 +242,7 @@ void MrsLlcpRos::callbackSendMessage(const mrs_modules_msgs::LlcpConstPtr &msg) 
   }
 
 
-  uint8_t out_buffer[512];
+  uint8_t out_buffer[SERIAL_BUFFER_SIZE];
 
   // llcp is working with arrays, so we need to convert the payload from the ROS message into an array
   std::vector<uint8_t> payload_vec  = msg->payload;
@@ -251,6 +251,11 @@ void MrsLlcpRos::callbackSendMessage(const mrs_modules_msgs::LlcpConstPtr &msg) 
   std::copy(payload_vec.begin(), payload_vec.end(), payload_arr);
 
   uint16_t msg_len = llcp_prepareMessage((uint8_t *)&payload_arr, payload_size, out_buffer);
+
+  if(debug_serial_){
+    ROS_INFO_STREAM("[MrsLlcpRos]: Prepared msg length: " << msg_len);
+  }
+
   serial_port_.sendCharArray(out_buffer, msg_len);
 
   std::vector<msg_counter>::iterator it = std::find_if(sent_msgs.begin(), sent_msgs.end(), boost::bind(&msg_counter::id, _1) == payload_arr[0]);
