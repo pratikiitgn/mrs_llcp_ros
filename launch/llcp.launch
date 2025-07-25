@@ -9,7 +9,8 @@
   <arg unless="$(arg DEBUG)" name="launch_prefix_debug" value=""/>
   <arg     if="$(arg DEBUG)" name="launch_prefix_debug" value="debug_roslaunch"/>
 
-  <arg name="portname" default="/dev/arduino"/>
+  <!-- <arg name="portname" default="/dev/arduino"/> -->
+  <arg name="portname" default="/dev/ttyUSB0"/>
   <arg name="baudrate" default="115200"/>
 
   <!-- will it run as standalone nodelet or using a nodelet manager? -->

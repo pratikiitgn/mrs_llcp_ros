@@ -4,6 +4,7 @@ sources:
     name: mrs_llcp
     rev: master
     type: git
+    params:
     sparse_paths:
       -
     links:
@@ -14,8 +15,9 @@ sources:
 sources_locked:
   - repo: https://github.com/ctu-mrs/mrs_llcp
     name: mrs_llcp
-    rev: 3d09365c587ca9a14d18cca1e331358f4ac39f72
+    rev: 4f11e9ead40dd97b7c590c84ce995a3856c39d44
     type: git
+    params:
     sparse_paths:
       -
     links:
