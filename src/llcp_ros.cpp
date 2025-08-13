@@ -195,14 +195,15 @@ void MrsLlcpRos::serialThread(void) {
 
         if (llcp_processChar(rx_buffer[i], &llcp_receiver, &message_in, &checksum_matched)) {
           /* ROS_INFO_STREAM("[MrsLlcpRos]: received message with id " << message_in->id << "; checksum is: " << checksum_matched); */
-          mrs_modules_msgs::Llcp msg_out;
 
-          msg_out.checksum_matched = checksum_matched;
+          const mrs_modules_msgs::Llcp::Ptr msg_out = boost::make_shared<mrs_modules_msgs::Llcp>();
+
+          msg_out->checksum_matched = checksum_matched;
 
           const uint8_t payload_size = llcp_receiver.payload_size;
 
           for (uint8_t i = 0; i < payload_size; i++) {
-            msg_out.payload.push_back(message_in->payload[i]);
+            msg_out->payload.push_back(message_in->payload[i]);
           }
           llcp_publisher_.publish(msg_out);
 
