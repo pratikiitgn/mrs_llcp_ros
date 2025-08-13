@@ -79,7 +79,7 @@ private:
 void MrsLlcpRos::onInit() {
 
   // Get paramters
-  nh_ = ros::NodeHandle("~");
+  nh_ = nodelet::Nodelet::getMTPrivateNodeHandle();
 
   ros::Time::waitForValid();
 
