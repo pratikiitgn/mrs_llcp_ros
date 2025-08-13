@@ -188,23 +188,25 @@ void MrsLlcpRos::serialThread(void) {
         LLCP_Message_t *message_in;
 
         bool checksum_matched = false;
+
         if (debug_serial_) {
           std::cout << rx_buffer[i];
         }
+
         if (llcp_processChar(rx_buffer[i], &llcp_receiver, &message_in, &checksum_matched)) {
           /* ROS_INFO_STREAM("[MrsLlcpRos]: received message with id " << message_in->id << "; checksum is: " << checksum_matched); */
           mrs_modules_msgs::Llcp msg_out;
 
           msg_out.checksum_matched = checksum_matched;
 
-          uint8_t payload_size = llcp_receiver.payload_size;
+          const uint8_t payload_size = llcp_receiver.payload_size;
 
           for (uint8_t i = 0; i < payload_size; i++) {
             msg_out.payload.push_back(message_in->payload[i]);
           }
           llcp_publisher_.publish(msg_out);
 
-          std::vector<msg_counter>::iterator it =
+          const std::vector<msg_counter>::iterator it =
               std::find_if(received_msgs.begin(), received_msgs.end(), boost::bind(&msg_counter::id, _1) == message_in->payload[0]);
           if (it != received_msgs.end()) {
             it->num++;
@@ -234,6 +236,7 @@ void MrsLlcpRos::callbackSendMessage(const mrs_modules_msgs::LlcpConstPtr &msg) 
     std::scoped_lock lock(mutex_connected_);
     connected = connected_;
   }
+
   if (!connected) {
     return;
   }
@@ -247,12 +250,13 @@ void MrsLlcpRos::callbackSendMessage(const mrs_modules_msgs::LlcpConstPtr &msg) 
   uint8_t out_buffer[SERIAL_BUFFER_SIZE];
 
   // llcp is working with arrays, so we need to convert the payload from the ROS message into an array
-  std::vector<uint8_t> payload_vec  = msg->payload;
-  uint8_t              payload_size = payload_vec.size();
-  uint8_t              payload_arr[payload_size];
+  const std::vector<uint8_t> payload_vec  = msg->payload;
+  const uint8_t              payload_size = payload_vec.size();
+
+  uint8_t payload_arr[payload_size];
   std::copy(payload_vec.begin(), payload_vec.end(), payload_arr);
 
-  uint16_t msg_len = llcp_prepareMessage((uint8_t *)&payload_arr, payload_size, out_buffer);
+  const uint16_t msg_len = llcp_prepareMessage((uint8_t *)&payload_arr, payload_size, out_buffer);
 
   if (debug_serial_ && verbose_) {
     ROS_INFO_STREAM("[MrsLlcpRos]: Prepared msg length: " << msg_len);
@@ -260,7 +264,7 @@ void MrsLlcpRos::callbackSendMessage(const mrs_modules_msgs::LlcpConstPtr &msg) 
 
   serial_port_.sendCharArray(out_buffer, msg_len);
 
-  std::vector<msg_counter>::iterator it = std::find_if(sent_msgs.begin(), sent_msgs.end(), boost::bind(&msg_counter::id, _1) == payload_arr[0]);
+  const std::vector<msg_counter>::iterator it = std::find_if(sent_msgs.begin(), sent_msgs.end(), boost::bind(&msg_counter::id, _1) == payload_arr[0]);
   if (it != sent_msgs.end()) {
     it->num++;
   } else {
