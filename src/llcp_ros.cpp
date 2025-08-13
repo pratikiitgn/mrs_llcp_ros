@@ -55,6 +55,7 @@ private:
   bool running_     = true;
   bool initialized_ = false;
   bool connected_   = false;
+  bool verbose_     = true;
 
   std::string portname_;
   int         baudrate_;
@@ -91,6 +92,7 @@ void MrsLlcpRos::onInit() {
   nh_.getParam("portname", portname_);
   nh_.getParam("baudrate", baudrate_);
   nh_.param<bool>("debug_serial", debug_serial_, false);
+  nh_.param<bool>("verbose", verbose_, true);
 
   llcp_publisher_ = nh_.advertise<mrs_modules_msgs::Llcp>("llcp_out", 1);
 
@@ -252,7 +254,7 @@ void MrsLlcpRos::callbackSendMessage(const mrs_modules_msgs::LlcpConstPtr &msg) 
 
   uint16_t msg_len = llcp_prepareMessage((uint8_t *)&payload_arr, payload_size, out_buffer);
 
-  if(debug_serial_){
+  if (debug_serial_ && verbose_) {
     ROS_INFO_STREAM("[MrsLlcpRos]: Prepared msg length: " << msg_len);
   }
 
@@ -293,29 +295,37 @@ void MrsLlcpRos::callbackMaintainerTimer(const ros::TimerEvent &event) {
       connectToSerial();
     }
   }
-  std::vector<std::string> testvector;
-  size_t                   tmp_len = std::max(sent_msgs.size(), received_msgs.size());
-  for (int i = 0; i < tmp_len; i++) {
-    testvector.push_back("                   |                      ");
+
+  if (verbose_) {
+
+    const size_t      line_count = std::max(sent_msgs.size(), received_msgs.size());
+    const std::string empty_line = "                   |                      ";
+
+    std::vector<std::string> testvector(line_count, empty_line);
+
+    ROS_INFO_STREAM("------------------------------------------------");
+    ROS_INFO_STREAM("------- llcp stats for last " << (ros::Time::now() - maintainer_last_time_).toSec() << " secs -------");
+    ROS_INFO_STREAM("sent messages:     |     received messages:");
+
+    for (size_t i = 0; i < sent_msgs.size(); i++) {
+      const std::string tmp_string = "ID " + std::to_string(sent_msgs[i].id) + ", " + std::to_string(sent_msgs[i].num) + " msgs";
+      testvector[i].replace(0, tmp_string.length(), tmp_string);
+    }
+
+    for (size_t i = 0; i < received_msgs.size(); i++) {
+      const std::string tmp_string = "ID " + std::to_string(received_msgs[i].id) + ", " + std::to_string(received_msgs[i].num) + " msgs";
+      testvector[i].replace(25, tmp_string.length(), tmp_string);
+    }
+
+    for (const auto &line : testvector) {
+      ROS_INFO_STREAM(line);
+    }
+
+    ROS_INFO_STREAM("------------------------------------------------");
   }
 
-  ROS_INFO_STREAM("------------------------------------------------");
-  ROS_INFO_STREAM("------- llcp stats for last " << (ros::Time::now() - maintainer_last_time_).toSec() << " secs -------");
-  ROS_INFO_STREAM("sent messages:     |     received messages:");
-  for (size_t i = 0; i < sent_msgs.size(); i++) {
-    std::string tmp_string = "ID " + std::to_string(sent_msgs[i].id) + ", " + std::to_string(sent_msgs[i].num) + " msgs";
-    testvector[i].replace(0, tmp_string.length(), tmp_string);
-  }
-  for (size_t i = 0; i < received_msgs.size(); i++) {
-    std::string tmp_string = "ID " + std::to_string(received_msgs[i].id) + ", " + std::to_string(received_msgs[i].num) + " msgs";
-    testvector[i].replace(25, tmp_string.length(), tmp_string);
-  }
   sent_msgs.clear();
   received_msgs.clear();
-  for (int i = 0; i < tmp_len; i++) {
-    ROS_INFO_STREAM(testvector[i]);
-  }
-  ROS_INFO_STREAM("------------------------------------------------");
 
   maintainer_last_time_ = ros::Time::now();
 }

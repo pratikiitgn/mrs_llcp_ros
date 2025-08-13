@@ -3,6 +3,7 @@
   <arg name="UAV_NAME" default="$(optenv UAV_NAME uav)" />
   <arg name="profiler" default="$(optenv PROFILER false)" />
   <arg name="nodename" default="llcp" />
+  <arg name="verbose"  default="true" />
 
   <!-- will it run using GNU debugger? -->
   <arg name="DEBUG" default="false" />
@@ -28,15 +29,16 @@
 
       <rosparam file="$(find mrs_llcp_ros)/config/llcp.yaml" />
 
-      <param name="uav_name" type="string" value="$(arg UAV_NAME)"/>
+      <param name="uav_name"        type="string" value="$(arg UAV_NAME)"/>
       <param name="enable_profiler" type="bool" value="$(arg profiler)" />
-      <param name="debug_serial" type="bool" value="false" />
+      <param name="debug_serial"    type="bool" value="false" />
+      <param name="verbose"         type="bool" value="$(arg verbose)" />
 
       <param name="portname" type="string" value="$(arg portname)"/>
       <param name="baudrate" type="int" value="$(arg baudrate)"/>
 
       <remap from="~llcp_out" to="~received_message" />
-      <remap from="~llcp_in" to="~send_message" />
+      <remap from="~llcp_in"  to="~send_message" />
 
     </node>
 
