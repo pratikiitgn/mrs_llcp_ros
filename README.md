@@ -99,3 +99,63 @@ void LlcpExample::callbackReceiveMessage(const mrs_msgs::LlcpConstPtr &msg) {
 
   llcp_publisher_.publish(llcp_msg);
 ```
+
+## Making Static Name for Arduino Devices
+
+1. Find the Arduino’s vendor and product IDs
+```
+lsusb
+```
+ 
+2. Look for the Arduino devices line, e.g.:
+
+```
+Bus 001 Device 010: ID 10c4:ea60 Silicon Labs CP210x UART Bridge
+```
+ Here, Vendor ID: 10c4 Product ID: ea60
+
+3. Check in which port currently, Arduino is connected.
+
+```
+ls /dev/tty*
+```
+ 
+4. Get its serial number (optional but safer)
+
+```
+udevadm info -a -n /dev/ttyUSB1 | grep '{serial}' | head -n 1
+```
+
+Replace /dev/ttyUSB1 with whatever port it currently shows up as. It will give you something like following 
+
+```
+ATTRS{serial}=="4af298999f9ded1187b15d84e259fb3e"
+```
+
+5. Create a udev rule. Create or open follwoing file
+```
+sudo nano /etc/udev/rules.d/99-arduino.rules // for arduino devices
+```
+Or
+```
+sudo nano /etc/udev/rules.d/99-cp210x.rules // for Silicon Labs CP210x USB–UART bridge
+```
+
+Add following code in this file.
+
+```
+SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", ATTRS{serial}=="4af298999f9ded1187b15d84e259fb3e", SYMLINK+="ttyCAM"
+```
+
+6. Reload and trigger udev
+```
+sudo udevadm control --reload-rules
+```
+```
+sudo udevadm trigger
+```
+
+7. To verify
+```
+ls -l /dev/ttyCAM
+```
