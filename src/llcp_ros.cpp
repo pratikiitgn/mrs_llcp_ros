@@ -114,6 +114,7 @@ void MrsLlcpRos::onInit() {
 
 /*  connectToSerial()//{ */
 
+
 void MrsLlcpRos::connectToSerial() {
 
   if (serial_thread_.joinable()) {
@@ -193,7 +194,7 @@ void MrsLlcpRos::serialThread(void) {
 
           // ROS_INFO_STREAM("[MrsLlcpRos]: received message with id " << message_in->id << "; checksum is: " << checksum_matched);
 
-          ROS_INFO_STREAM("[MrsLlcpRos]: received message with id ");
+          // ROS_INFO_STREAM("[MrsLlcpRos]: received message with id ");
           // ROS_INFO_STREAM();
 
           mrs_modules_msgs::Llcp msg_out;

@@ -10,7 +10,7 @@
   <arg     if="$(arg DEBUG)" name="launch_prefix_debug" value="debug_roslaunch"/>
 
   <!-- <arg name="portname" default="/dev/arduino"/> -->
-  <arg name="portname" default="/dev/ttyUSB0"/>
+  <arg name="portname" default="/dev/ttyCAM"/>
   <arg name="baudrate" default="115200"/>
 
   <!-- will it run as standalone nodelet or using a nodelet manager? -->
@@ -40,6 +40,13 @@
       <remap from="~llcp_in" to="~send_message" />
 
     </node>
+
+  <node pkg="nodelet" type="nodelet" name="cam_device_data" args="$(arg nodelet) mrs_llcp_ros/CAMDeviceData $(arg nodelet_manager)" launch-prefix="$(arg launch_prefix_debug)" output="screen">
+
+  </node>
+  
+  <!-- <node pkg="nodelet" type="nodelet" name="cam_device_data"
+        args="load mrs_llcp_ros/CAMDeviceData my_nodelet_manager" output="screen" /> -->
 
   </group>
 

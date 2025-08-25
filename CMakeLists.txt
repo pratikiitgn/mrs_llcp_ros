@@ -6,11 +6,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_definitions(-DLLCP_LITTLE_ENDIAN)
 
+find_package(Eigen3 REQUIRED)
+set(Eigen_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIRS})
+set(Eigen_LIBRARIES ${Eigen_LIBRARIES})
+
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   cmake_modules
   nodelet
   mrs_msgs
+  std_msgs
+  mrs_lib
   )
 
 
@@ -18,6 +24,7 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES LlcpRos
   CATKIN_DEPENDS roscpp mrs_msgs
+  DEPENDS Eigen
   )
 
 include_directories(
@@ -30,9 +37,12 @@ add_library(llcp
   mrs_llcp/llcp.c
 )
 
-add_library(MrsLlcpRos src/llcp_ros.cpp src/serial_port.cpp)
+
+add_library(MrsLlcpRos src/llcp_ros.cpp src/serial_port.cpp src/CAM_device_data.cpp)
+
 target_link_libraries(MrsLlcpRos
   llcp
   ${catkin_LIBRARIES}
   )
 
+target_link_libraries(MrsLlcpRos ${catkin_LIBRARIES})

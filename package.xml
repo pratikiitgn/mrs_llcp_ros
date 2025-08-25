@@ -18,12 +18,21 @@
   <depend>cmake_modules</depend>
   <depend>nodelet</depend>
   <depend>mrs_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>mrs_uav_managers</depend>
+  <depend>mrs_lib</depend>
+
+  <build_depend>eigen</build_depend>
+  <exec_depend>eigen</exec_depend>
+
+  <build_depend>libeigen3-dev</build_depend>
+  <exec_depend>libeigen3-dev</exec_depend>
 
   <export>
 
     <!-- The plugins.xml file defines nodelet as a plugin -->
     <nodelet plugin="${prefix}/plugins.xml" />
-
+    
   </export>
 
 </package>
